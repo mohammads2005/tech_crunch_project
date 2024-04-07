@@ -1,7 +1,9 @@
 from abc import abstractmethod
 import keyword
+from sre_parse import CATEGORIES
 from tabnanny import verbose
 from tkinter.tix import Tree
+from unicodedata import category
 from django.db import models
 from datetime import datetime
 
@@ -38,27 +40,10 @@ class Author(BaseModel):
         return self.full_name
 
 
-class Article(BaseModel):
-    id = models.IntegerField(primary_key=True, verbose_name="Article's ID")
-    headline = models.TextField(verbose_name="Headline")
-    author = models.ManyToManyField(
-        Author, related_name="article", verbose_name="Author"
-    )
-    url = models.URLField(max_length=200, verbose_name="Article's Link")
-    content = models.TextField(verbose_name="Article's Content")
-    image = models.URLField(max_length=200, verbose_name="Image Link")
-
-    class Meta:
-        verbose_name = "Article"
-        verbose_name_plural = "Articles"
-
-    def __str__(self) -> str:
-        return self.headline
-
-
 class Category(BaseModel):
     id = models.IntegerField(primary_key=True, verbose_name="Category's ID")
     category_name = models.CharField(max_length=50, verbose_name="Category's Name")
+    link = models.URLField(max_length=50, verbose_name="Category's Link")
 
     class Meta:
         verbose_name = "Category"
@@ -69,8 +54,33 @@ class Category(BaseModel):
         return self.category_name
 
 
+class Article(BaseModel):
+    id = models.IntegerField(primary_key=True, verbose_name="Article's ID")
+    headline = models.TextField(verbose_name="Headline")
+    author = models.ForeignKey(
+        Author, 
+        related_name="article",
+        verbose_name="Author", 
+        on_delete=models.CASCADE,
+    )
+    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    content = models.TextField(verbose_name="Article's Content")
+    categories = models.ManyToManyField(
+        Category, related_name="article", verbose_name="Categories"
+    )
+    image = models.URLField(max_length=200, verbose_name="Image Link")
+    is_scraped = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Article"
+        verbose_name_plural = "Articles"
+
+    def __str__(self) -> str:
+        return self.headline
+
+
 class KeyWord(BaseModel):
-    word = models.CharField(max_length=250, verbose_name="Keyword")
+    word = models.CharField(max_length=255, verbose_name="Keyword")
 
     class Meta:
         verbose_name = "Keyword"
@@ -80,7 +90,7 @@ class KeyWord(BaseModel):
         return self.word
 
 
-class UserSearch(BaseModel):
+class UserKeywordSearch(BaseModel):
     keyword = models.ForeignKey(
         KeyWord,
         related_name="usersearch",
@@ -91,13 +101,15 @@ class UserSearch(BaseModel):
 
     class Meta:
         verbose_name = "User Search"
-    
+
     def __str__(self) -> str:
         return self.keyword.word
 
 
 class DailySearch(BaseModel):
-    articles = models.ManyToManyField(Article, related_name="dailysearch", verbose_name="Articles")
+    articles = models.ManyToManyField(
+        Article, related_name="dailysearch", verbose_name="Articles", blank=True
+    )
 
     class Meta:
         verbose_name = "Daily Search"
