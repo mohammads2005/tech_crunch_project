@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from .models import Author, Article, Category
+from .models import Author, Article, Category, ArticleSearchByKeyword
 
 
 class ScraperHandler:
@@ -55,14 +55,23 @@ class ScraperHandler:
 
             if response.status_code == 200:
                 page_soup = BeautifulSoup(response.text, "html.parser")
-                articles_slugs = self.slug_parser(soup=page_soup)
+                articles = page_soup.find_all("a", {"class": "thmb"})
+                search_items += self.parse_search_item(
+                    articles=articles,
+                    usersearch_instance=usersearch_instance,
+                )
+                articles_slugs = self.slug_parser(articles=articles)
 
-        for slug in articles_slugs:
-            search_items.append(self.article_parser(slug=slug))
+        for i, slug in enumerate(articles_slugs):
+            parsed_article = self.article_parser(slug=slug)
+            item_to_complete = search_items[i]
+            item_to_complete.article = parsed_article
+            item_to_complete.is_scraped = True
+            item_to_complete.save()
 
         return len(search_items)
 
-    def slug_parser(self, soup):
+    def slug_parser(self, articles):
         """ A parser to return the end of a URL known as 'slug'
 
         Args:
@@ -72,12 +81,24 @@ class ScraperHandler:
             str: The srting refering to the 'slug' of an article's URL  
         """
         slugs = list()
-        links = soup.find_all("a", {"class": "thmb"})
 
-        for link in links:
-            slugs.append(link["href"].split("/")[-2])
+        for article in articles:
+            slugs.append(article["href"].split("/")[-2])
 
         return slugs
+
+    def parse_search_item(self, articles, usersearch_instance):
+        search_items = list()
+
+        for article in articles:
+            article_search_item = ArticleSearchByKeyword.objects.create(
+                user_keyword_search=usersearch_instance,
+                headline=article["title"],
+                url=article["href"],
+            )
+            search_items.append(article_search_item)
+
+        return search_items
 
     def article_parser(self, slug):
         categories = list()
@@ -106,8 +127,11 @@ class ScraperHandler:
             content=content,
             categories=categories,
             image=image_url,
-            is_scraped=True,
+            created_date=article_response_json["date"],
+            modified_date=article_response_json["modified"],
         )
+
+        return article
 
     def author_parser(self, id):
         author_response_json = self.send_request(

@@ -58,9 +58,9 @@ class Article(BaseModel):
     id = models.IntegerField(primary_key=True, verbose_name="Article's ID")
     headline = models.TextField(verbose_name="Headline")
     author = models.ForeignKey(
-        Author, 
+        Author,
         related_name="article",
-        verbose_name="Author", 
+        verbose_name="Author",
         on_delete=models.CASCADE,
     )
     url = models.URLField(max_length=200, verbose_name="Article's Link")
@@ -69,7 +69,6 @@ class Article(BaseModel):
         Category, related_name="article", verbose_name="Categories"
     )
     image = models.URLField(max_length=200, verbose_name="Image Link")
-    is_scraped = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Article"
@@ -116,3 +115,22 @@ class DailySearch(BaseModel):
 
     def __str__(self) -> str:
         return str(self.created_date)
+
+
+class ArticleSearchByKeyword(BaseModel):
+    user_keyword_search = models.ForeignKey(
+        UserKeywordSearch,
+        related_name="article_search_by_keyword",
+        verbose_name="User Keyword Search",
+        on_delete=models.CASCADE,
+    )
+    article = models.ForeignKey(
+        Article,
+        related_name="article_search_by_keyword",
+        verbose_name="Article",
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    headline = models.TextField(verbose_name="Headline")
+    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    is_scraped = models.BooleanField(default=False)
