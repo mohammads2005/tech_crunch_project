@@ -31,12 +31,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Trusted App(s):
-    'django-celery-beat'
+    'django_celery_beat',
+    'django_celery_results',
+    'import_export',
 
     # My App(s):
-    'techcrunch.apps.TechcrunchConfig'
+    'techcrunch.apps.TechcrunchConfig',
 ]
 
 MIDDLEWARE = [
