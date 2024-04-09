@@ -114,3 +114,7 @@ MEDIA_URL = 'media/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+TECH_CRUNCH_BASE_URL = "https://techcrunch.com"
+TECH_CRUNCH_SEARCH_URL = "https://search.techcrunch.com/search?p={keyword}&b={page}1"
+TECH_CRUNCH_JSON_URL = "https://techcrunch.com/wp-json/wp/v2/{model}?{search_type}"

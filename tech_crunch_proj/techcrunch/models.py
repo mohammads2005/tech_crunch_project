@@ -106,9 +106,16 @@ class UserKeywordSearch(BaseModel):
 
 
 class DailySearch(BaseModel):
-    articles = models.ManyToManyField(
-        Article, related_name="dailysearch", verbose_name="Articles", blank=True
+    articles = models.ForeignKey(
+        Article,
+        related_name="dailysearch",
+        verbose_name="Articles",
+        blank=True,
+        on_delete=models.CASCADE,
     )
+    headline = models.TextField(verbose_name="Headline")
+    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    is_scraped = models.BooleanField(default=False, verbose_name="Is Scraped")
 
     class Meta:
         verbose_name = "Daily Search"
@@ -133,4 +140,4 @@ class ArticleSearchByKeyword(BaseModel):
     )
     headline = models.TextField(verbose_name="Headline")
     url = models.URLField(max_length=200, verbose_name="Article's Link")
-    is_scraped = models.BooleanField(default=False)
+    is_scraped = models.BooleanField(default=False, verbose_name="Is Scraped")

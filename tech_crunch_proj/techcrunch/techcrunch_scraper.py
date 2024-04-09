@@ -1,10 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
-from .models import Author, Article, Category, ArticleSearchByKeyword
+from .models import Author, Article, Category, ArticleSearchByKeyword, DailySearch
 
 
 class ScraperHandler:
-    def __init__(self, search_url, json_url) -> None:
+    def __init__(self, base_url, search_url, json_url) -> None:
+        self.base_url = base_url # The URL to use for daily search in techcrunch.com
         self.search_url = search_url  # The URL to search for the user-entered keyword
         self.json_url = json_url  # The URL for receiving raw json data of articles, categories and authors
 
@@ -32,6 +33,26 @@ class ScraperHandler:
         else:
             return response
 
+    def daily_search(self):
+        daily_articles = list()
+
+        response = self.send_request(url=self.base_url)
+        if response.status_code == 200:
+            page_soup = BeautifulSoup(response.text, "html.parser")
+            articles = page_soup.find_all("a", attrs={"class", "post-block__title__link"})
+
+            daily_articles += self.parse_daily_item(articles=articles)
+            slugs = self.slug_parser(articles=articles)
+
+        for i, slug in enumerate(slugs):
+            parsed_article = self.article_parser(slug=slug)
+            item_to_complete = daily_articles[i]
+            item_to_complete.article = parsed_article
+            item_to_complete.is_scraped = True
+            item_to_complete.save()
+
+        return len(daily_articles)
+
     def search_by_keyword(self, usersearch_instance):
         """ By receving the user-input values as an instance of the UserKeywordSearch,
             starts scraping the given number of pages for the given keyword 
@@ -43,7 +64,7 @@ class ScraperHandler:
             int: Total number of scraped items
         """
 
-        search_items = list()
+        search_articles = list()
 
         for i in range(usersearch_instance.page_count):
             response = self.send_request(
@@ -56,7 +77,7 @@ class ScraperHandler:
             if response.status_code == 200:
                 page_soup = BeautifulSoup(response.text, "html.parser")
                 articles = page_soup.find_all("a", {"class": "thmb"})
-                search_items += self.parse_search_item(
+                search_articles += self.parse_search_item(
                     articles=articles,
                     usersearch_instance=usersearch_instance,
                 )
@@ -64,12 +85,12 @@ class ScraperHandler:
 
         for i, slug in enumerate(articles_slugs):
             parsed_article = self.article_parser(slug=slug)
-            item_to_complete = search_items[i]
+            item_to_complete = search_articles[i]
             item_to_complete.article = parsed_article
             item_to_complete.is_scraped = True
             item_to_complete.save()
 
-        return len(search_items)
+        return len(search_articles)
 
     def slug_parser(self, articles):
         """ A parser to return the end of a URL known as 'slug'
@@ -87,18 +108,31 @@ class ScraperHandler:
 
         return slugs
 
+    def parse_daily_item(self, articles):
+        daily_articles = list()
+
+        for article in articles:
+            daily_search_item = DailySearch.objects.create(
+                headlne=article.text,
+                url=article["href"],
+            )
+
+            daily_articles.append(daily_search_item)
+
+        return daily_articles
+
     def parse_search_item(self, articles, usersearch_instance):
-        search_items = list()
+        search_articles = list()
 
         for article in articles:
             article_search_item = ArticleSearchByKeyword.objects.create(
                 user_keyword_search=usersearch_instance,
-                headline=article["title"],
+                headline=article.text,
                 url=article["href"],
             )
-            search_items.append(article_search_item)
+            search_articles.append(article_search_item)
 
-        return search_items
+        return search_articles
 
     def article_parser(self, slug):
         categories = list()
