@@ -26,15 +26,12 @@ class UserSearchForm(forms.Form):
 
 
 class CategoryReportForm(forms.Form):
-    category_select = forms.ChoiceField(
+    REPORT_STATUS = (
+        ("show", "SHOW"),
+        ("dont_show", "Don't SHOW"),
+    )
+    report = forms.ChoiceField(
         label="Select Category",
-        choices=(),
+        choices=[REPORT_STATUS],
         initial=None,
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        searched_categories = Category.objects.values_list("category_name", flat=True)
-        CATEGORIES = tuple((category, category) for category in searched_categories)
-        self.fields["category_select"].choices = CATEGORIES
