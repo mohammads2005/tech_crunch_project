@@ -56,7 +56,7 @@ ROOT_URLCONF = 'tech_crunch_proj.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'template')],
+        'DIRS': [os.path.join(BASE_DIR, 'techcrunch/template')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

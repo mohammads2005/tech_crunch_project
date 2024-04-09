@@ -27,5 +27,5 @@ celery_app.autodiscover_tasks()
 
 
 # Commands to run for celery
-# celery -A good_reads_scraper_with_django worker -l INFO -P eventlet
-# celery -A good_reads_scraper_with_django beat --loglevel=INFO
+# celery -A tech_crunch_proj worker -l INFO -P eventlet
+# celery -A tech_crunch_proj beat --loglevel=INFO
