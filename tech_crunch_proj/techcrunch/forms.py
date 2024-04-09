@@ -3,7 +3,7 @@ from django import forms
 from .models import Category
 
 
-class UserKeywordSearchForm(forms.Form):
+class UserSearchForm(forms.Form):
     EXPORT_TYPE = (
         ("csv", "CSV"),
         ("json", "JSON"),
