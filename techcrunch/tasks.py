@@ -24,7 +24,7 @@ def by_keyword_scraper(keyword, page_count):
     )
 
     scraped_items_count = scraper_handler.search_by_keyword(usersearch_instance=user_keyword_search)
-    
+
     return {
         "keyword": keyword,
         "page_count": page_count,
@@ -129,3 +129,7 @@ def scrape_search_ramining_items():
         "search_type": "By Keyword",
         "new_scraped_items_count": len(new_scraped_items),
     }
+
+
+# @shared_task
+# def export_data(file_format, resource_type):

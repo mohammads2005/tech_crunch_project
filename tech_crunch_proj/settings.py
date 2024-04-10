@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 from .local_settings import *
+from import_export.formats.base_formats import XLS, CSV, JSON
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -119,4 +121,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TECH_CRUNCH_BASE_URL = "https://techcrunch.com"
 TECH_CRUNCH_SEARCH_URL = "https://search.techcrunch.com/search?p={keyword}&b={page}1"
-TECH_CRUNCH_JSON_URL = "https://techcrunch.com/wp-json/wp/v2/{model}?{search_type}"
+TECH_CRUNCH_JSON_URL = "https://techcrunch.com/wp-json/wp/v2/{model}{search_type}"
+
+EXPORT_FORMATS = [XLS, CSV, JSON]

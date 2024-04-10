@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from django.db import IntegrityError
 from .models import Author, Article, Category, ArticleSearchByKeyword, DailySearch
 
 
@@ -65,6 +66,7 @@ class ScraperHandler:
         """
 
         search_articles = list()
+        index = 0
 
         for i in range(usersearch_instance.page_count):
             response = self.send_request(
@@ -83,12 +85,13 @@ class ScraperHandler:
                 )
                 articles_slugs = self.slug_parser(articles=articles)
 
-        for i, slug in enumerate(articles_slugs):
-            parsed_article = self.article_parser(slug=slug)
-            item_to_complete = search_articles[i]
-            item_to_complete.article = parsed_article
-            item_to_complete.is_scraped = True
-            item_to_complete.save()
+            for slug in articles_slugs:
+                parsed_article = self.article_parser(slug=slug)
+                item_to_complete = search_articles[index]
+                item_to_complete.article = parsed_article
+                item_to_complete.is_scraped = True
+                item_to_complete.save()
+                index += 1
 
         return len(search_articles)
 
@@ -113,7 +116,7 @@ class ScraperHandler:
 
         for article in articles:
             daily_search_item = DailySearch.objects.create(
-                headlne=article.text,
+                headline=article.text,
                 url=article["href"],
             )
 
@@ -139,7 +142,7 @@ class ScraperHandler:
 
         article_response_json = self.send_request(
             url=self.json_url.format(
-                model="posts",
+                model="posts?",
                 search_type=f"slug={slug}",
             )
         ).json()
@@ -148,57 +151,76 @@ class ScraperHandler:
         author = self.author_parser(id=article_response_json["author"])
         content = self.content_parser(article_response_json["content"])
         headline = self.headline_parser(article_response_json["title"])
-        image_url = article_response_json["og_image"][0]["url"]
+        image_url = article_response_json["yoast_head_json"]["og_image"][0]["url"]
 
         for category_id in article_response_json["categories"]:
             categories.append(self.category_parser(id=category_id))
 
-        article = Article.objects.get_or_create(
-            id=article_response_json["id"],
-            headline=headline,
-            author=author,
-            url=article_response_json["link"],
-            content=content,
-            categories=categories,
-            image=image_url,
-            created_date=article_response_json["date"],
-            modified_date=article_response_json["modified"],
-        )
+        try:
+            article, _ = Article.objects.get_or_create(
+                id=article_response_json["id"],
+                headline=headline,
+                author=author,
+                url=article_response_json["link"],
+                content=content,
+                image=image_url,
+                created_date=article_response_json["date"],
+                modified_date=article_response_json["modified"],
+            )
+            article.categories.add(*categories)
+            article.save()
+
+        except IntegrityError:
+            return None
 
         return article
 
     def author_parser(self, id):
         author_response_json = self.send_request(
             url=self.json_url.format(
-                model="users",
-                search_type=f"id={id}",
+                model="users/",
+                search_type=id,
             )
         ).json()
 
-        author, _ = Author.objects.get_or_create(
-            id=id,
-            full_name=author_response_json["name"],
-            profile=author_response_json["link"],
-        )
+        if type(author_response_json) == list:
+            author_response_json = author_response_json[0]
+
+        try:
+            author, _ = Author.objects.get_or_create(
+                id=id,
+                full_name=author_response_json["name"],
+                profile=author_response_json["link"],
+            )
+
+        except IntegrityError:
+            return None
 
         return author
 
     def category_parser(self, id):
         category_response_json = self.send_request(
             url=self.json_url.format(
-                model="categories",
-                search_type=f"id={id}",
+                model="categories/",
+                search_type=id,
             )
         ).json()
 
-        name_soup = BeautifulSoup(category_response_json["name"], "html.parser")
-        category_name = "".join(name_soup.strings)
-        category = Category.objects.get_or_create(
-            id=id,
-            category_name=category_name,
-            description=category_response_json["description"],
-            link=category_response_json["link"],
-        )
+        if type(category_response_json) == list:
+            category_response_json = category_response_json[0]
+
+        category_name = BeautifulSoup(category_response_json["name"], "html.parser")
+        
+        try:
+            category, _ = Category.objects.get_or_create(
+                id=id,
+                category_name=category_name.text,
+                description=category_response_json["description"],
+                link=category_response_json["link"],
+            )
+
+        except IntegrityError:
+            return None
 
         return category
 

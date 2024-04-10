@@ -1,13 +1,8 @@
 from abc import abstractmethod
-import keyword
-from sre_parse import CATEGORIES
-from tabnanny import verbose
-from tkinter.tix import Tree
-from unicodedata import category
 from django.db import models
 from datetime import datetime
+from django.utils.html import mark_safe
 
-from django.forms import IntegerField
 
 # Create your models here.
 
@@ -28,8 +23,8 @@ class BaseModel(models.Model):
 
 class Author(BaseModel):
     id = models.IntegerField(primary_key=True, verbose_name="Author's ID")
-    full_name = models.CharField(max_length=50, verbose_name="Full Name")
-    profile = models.URLField(max_length=100, verbose_name="Tech Crunch Profile")
+    full_name = models.CharField(max_length=55, verbose_name="Full Name")
+    profile = models.URLField(max_length=255, verbose_name="Tech Crunch Profile")
 
     class Meta:
         verbose_name = "Author"
@@ -42,8 +37,8 @@ class Author(BaseModel):
 
 class Category(BaseModel):
     id = models.IntegerField(primary_key=True, verbose_name="Category's ID")
-    category_name = models.CharField(max_length=50, verbose_name="Category's Name")
-    link = models.URLField(max_length=50, verbose_name="Category's Link")
+    category_name = models.CharField(max_length=255, verbose_name="Category's Name")
+    link = models.URLField(max_length=255, verbose_name="Category's Link")
 
     class Meta:
         verbose_name = "Category"
@@ -63,19 +58,27 @@ class Article(BaseModel):
         verbose_name="Author",
         on_delete=models.CASCADE,
     )
-    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    url = models.URLField(max_length=255, verbose_name="Article's Link")
     content = models.TextField(verbose_name="Article's Content")
     categories = models.ManyToManyField(
         Category, related_name="article", verbose_name="Categories"
     )
-    image = models.URLField(max_length=200, verbose_name="Image Link")
+    image = models.ImageField(upload_to="media/", verbose_name="Image")
+
+    def image_tag(self):
+        if self.image:
+            return mark_safe(f'<img src="{self.image.url}" style="max-width:50px; max-height:50px" />')
+        else:
+            return "No Image Found!"
+
+    image_tag.short_description = "Image"
 
     class Meta:
         verbose_name = "Article"
         verbose_name_plural = "Articles"
 
     def __str__(self) -> str:
-        return self.headline
+        return self.headline[:10]
 
 
 class KeyWord(BaseModel):
@@ -111,10 +114,11 @@ class DailySearch(BaseModel):
         related_name="dailysearch",
         verbose_name="Articles",
         blank=True,
+        null=True,
         on_delete=models.CASCADE,
     )
     headline = models.TextField(verbose_name="Headline")
-    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    url = models.URLField(max_length=255, verbose_name="Article's Link")
     is_scraped = models.BooleanField(default=False, verbose_name="Is Scraped")
 
     class Meta:
@@ -136,8 +140,12 @@ class ArticleSearchByKeyword(BaseModel):
         related_name="article_search_by_keyword",
         verbose_name="Article",
         blank=True,
+        null=True,
         on_delete=models.CASCADE,
     )
     headline = models.TextField(verbose_name="Headline")
-    url = models.URLField(max_length=200, verbose_name="Article's Link")
+    url = models.URLField(max_length=255, verbose_name="Article's Link")
     is_scraped = models.BooleanField(default=False, verbose_name="Is Scraped")
+
+    def __str__(self) -> str:
+        return self.headline[:10]
