@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from django.contrib import admin
@@ -17,6 +18,8 @@ from .models import (
     DailySearch,
     ArticleSearchByKeyword,
 )
+
+admin_logger = logging.getLogger(name="techcrunch.admin")
 
 # Register your models here.
 
@@ -52,6 +55,7 @@ class ArticleAdmin(ExportActionModelAdmin):
         file_name = f"export-{time_now_string}"
 
         for article in queryset:
+            try:
                 export_data.delay(
                     image=article.image,
                     html_source=article.html_source,
@@ -59,6 +63,11 @@ class ArticleAdmin(ExportActionModelAdmin):
                     file_name=file_name,
                     slug=file_name,
                 )
+                
+                admin_logger.info = (f"Exported data from article with id: {article.id}")
+                
+            except:
+                admin_logger.error(f"Error occured while trying to export data from article: {article.id}")
 
         return super().export_admin_action(request, queryset)
 
