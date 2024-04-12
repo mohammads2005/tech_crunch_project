@@ -6,6 +6,8 @@ from .models import KeyWord, UserKeywordSearch, ArticleSearchByKeyword, DailySea
 
 import matplotlib.pyplot as plt
 import numpy as np
+import requests
+import zipfile
 
 
 @shared_task
@@ -131,5 +133,17 @@ def scrape_search_ramining_items():
     }
 
 
-# @shared_task
-# def export_data(file_format, resource_type):
+@shared_task
+def export_data(image, html_source, id, file_name, slug):
+    image_response = requests.get(url=image)
+    
+    with zipfile.ZipFile(f"{settings.MEDIA_ROOT}{file_name}.zip", "a", zipfile.ZIP_DEFLATED) as zip_file:
+        if "url.txt" not in zip_file.namelist():
+            zip_file.writestr("url.txt", f"exported-zipped-file/{slug}")
+
+        zip_file.writestr(f"{id}.jpg", image_response.content)
+        zip_file.writestr(f"{id}.html", html_source)
+
+        zip_file.close()
+
+    return "DONE!"

@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from django.db import IntegrityError
+
 from .models import Author, Article, Category, ArticleSearchByKeyword, DailySearch
 
 
@@ -31,8 +31,7 @@ class ScraperHandler:
             )
             exit()
 
-        else:
-            return response
+        return response
 
     def daily_search(self):
         daily_articles = list()
@@ -153,25 +152,26 @@ class ScraperHandler:
         headline = self.headline_parser(article_response_json["title"])
         image_url = article_response_json["yoast_head_json"]["og_image"][0]["url"]
 
+        main_response = self.send_request(url=article_response_json["link"])
+        html_soup = BeautifulSoup(main_response.text, "html.parser")
+
         for category_id in article_response_json["categories"]:
             categories.append(self.category_parser(id=category_id))
 
-        try:
-            article, _ = Article.objects.get_or_create(
-                id=article_response_json["id"],
-                headline=headline,
-                author=author,
-                url=article_response_json["link"],
-                content=content,
-                image=image_url,
-                created_date=article_response_json["date"],
-                modified_date=article_response_json["modified"],
-            )
-            article.categories.add(*categories)
-            article.save()
+        article, _ = Article.objects.get_or_create(
+            id=article_response_json["id"],
+            headline=headline,
+            author=author,
+            url=article_response_json["link"],
+            content=content,
+            image=image_url,
+            html_source = html_soup.prettify(),
+            created_date=article_response_json["date"],
+            modified_date=article_response_json["modified"],
+        )
 
-        except IntegrityError:
-            return None
+        article.categories.add(*categories)
+        article.save()
 
         return article
 
@@ -186,15 +186,11 @@ class ScraperHandler:
         if type(author_response_json) == list:
             author_response_json = author_response_json[0]
 
-        try:
-            author, _ = Author.objects.get_or_create(
-                id=id,
-                full_name=author_response_json["name"],
-                profile=author_response_json["link"],
-            )
-
-        except IntegrityError:
-            return None
+        author, _ = Author.objects.get_or_create(
+            id=id,
+            full_name=author_response_json["name"],
+            profile=author_response_json["link"],
+        )
 
         return author
 
@@ -210,17 +206,13 @@ class ScraperHandler:
             category_response_json = category_response_json[0]
 
         category_name = BeautifulSoup(category_response_json["name"], "html.parser")
-        
-        try:
-            category, _ = Category.objects.get_or_create(
-                id=id,
-                category_name=category_name.text,
-                description=category_response_json["description"],
-                link=category_response_json["link"],
-            )
 
-        except IntegrityError:
-            return None
+        category, _ = Category.objects.get_or_create(
+            id=id,
+            category_name=category_name.text,
+            description=category_response_json["description"],
+            link=category_response_json["link"],
+        )
 
         return category
 

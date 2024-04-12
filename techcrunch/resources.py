@@ -18,7 +18,7 @@ class ArticleResource(resources.ModelResource):
     categories = fields.Field(
         column_name="categories",
         attribute="categories",
-        widget=widgets.ManyToManyWidget(Category, ","),
+        widget=widgets.ManyToManyWidget(Category, field="category_name", separator=","),
     )
     author = fields.Field(
         column_name="author",

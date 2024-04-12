@@ -109,18 +109,29 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 TECH_CRUNCH_BASE_URL = "https://techcrunch.com"
 TECH_CRUNCH_SEARCH_URL = "https://search.techcrunch.com/search?p={keyword}&b={page}1"
 TECH_CRUNCH_JSON_URL = "https://techcrunch.com/wp-json/wp/v2/{model}{search_type}"
+
+
+CELERY_BROKER_URL = "amqp://guest:guest@localhost:5672//"
+CELERY_TIMEZONE = "Asia/Tehran"
+CELERY_TASK_TIME_LIMIT = 60 * 60
+CELERY_RESULT_BACKEND = "rpc://"
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
 
 EXPORT_FORMATS = [XLS, CSV, JSON]

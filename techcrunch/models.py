@@ -1,8 +1,8 @@
 from abc import abstractmethod
+
 from django.db import models
 from datetime import datetime
-from django.utils.html import mark_safe
-
+from django.utils.html import format_html
 
 # Create your models here.
 
@@ -63,11 +63,14 @@ class Article(BaseModel):
     categories = models.ManyToManyField(
         Category, related_name="article", verbose_name="Categories"
     )
-    image = models.ImageField(upload_to="media/", verbose_name="Image")
+    image = models.URLField(max_length=255, verbose_name="Image", null=True)
+    html_source = models.TextField(verbose_name="HTML Source Code", null=True)
 
     def image_tag(self):
         if self.image:
-            return mark_safe(f'<img src="{self.image.url}" style="max-width:50px; max-height:50px" />')
+            return format_html(
+                '<img src="{}" "max-width:2px"; "max-height:2px" />'.format(self.image)
+            )
         else:
             return "No Image Found!"
 

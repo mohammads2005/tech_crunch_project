@@ -1,6 +1,12 @@
+from datetime import datetime
+
 from django.contrib import admin
+from django.conf import settings
 from django.contrib.admin import register
-from import_export.admin import ImportExportModelAdmin
+
+from import_export.admin import ExportActionModelAdmin
+
+from .tasks import export_data
 from .resources import AuthorResource, CategoryResource, ArticleResource
 from .models import (
     Author,
@@ -16,28 +22,45 @@ from .models import (
 
 
 @register(Author)
-class AuthorAdmin(ImportExportModelAdmin):
-    resource_classes = AuthorResource
+class AuthorAdmin(ExportActionModelAdmin):
+    resource_classes = [AuthorResource]
     list_display = ("id", "full_name", "profile", "created_date")
     list_display_links = ("id", "full_name")
     list_filter = ("created_date",)
 
 
 @register(Category)
-class CategoryAdmin(ImportExportModelAdmin):
-    resource_class = CategoryResource
+class CategoryAdmin(ExportActionModelAdmin):
+    resource_classes = [CategoryResource]
     list_display = ("id", "category_name", "link", "created_date")
     list_display_links = ("id", "category_name")
     list_filter = ("created_date",)
 
 
 @register(Article)
-class ArticleAdmin(admin.ModelAdmin):
-    resource_class = ArticleResource
+class ArticleAdmin(ExportActionModelAdmin):
+    resource_classes = [ArticleResource]
     list_display = ("id", "headline", "image_tag", "created_date", "modified_date")
     readonly_fields = ("image_tag",)
     list_display_links = ("id", "headline")
     list_filter = ("created_date",)
+
+    def export_admin_action(self, request, queryset):
+        time_now = datetime.now()
+        time_now_string = time_now.strftime("%Y-%m-%d_%H-%M-%S")
+
+        file_name = f"export-{time_now_string}"
+
+        for article in queryset:
+                export_data.delay(
+                    image=article.image,
+                    html_source=article.html_source,
+                    id=article.id,
+                    file_name=file_name,
+                    slug=file_name,
+                )
+
+        return super().export_admin_action(request, queryset)
 
 
 @register(KeyWord)

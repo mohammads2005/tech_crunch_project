@@ -1,5 +1,8 @@
+import os
+
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from django.conf import settings
 
 from .tasks import by_keyword_scraper, daily_scraper, category_report
 from .forms import UserSearchForm, CategoryReportForm, ExportForm
@@ -81,3 +84,13 @@ def export_view(request):
     else:
         export_form = ExportForm()
         return render(request, "techcrunch/export_options.html", {"form": export_form})
+
+
+def export_zip_download(request, file_name):
+    file_path = os.path.join(settings.MEDIA_ROOT, f"{file_name}.zip")
+
+    response = FileResponse(open(file_path, "rb"))
+    response["Content-Type"] = "application/zip"
+    response["Content-Disposition"] = "attachment;filename={}".format(f"{file_name}.zip")
+
+    return response
